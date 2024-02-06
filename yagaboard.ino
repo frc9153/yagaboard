@@ -63,7 +63,10 @@ void draw_string(char* text) {
         // Keep track of which columns are used so we can space letters based on content.
         bitSet(x_populated_mask, glyph_x - 1);
 
-        leds[pos_to_idx(x + glyph_x, glyph_y + (GRID_HEIGHT - GLYPH_HEIGHT))] = CRGB(5, 5, 0);
+        int idx = pos_to_idx(x + glyph_x, glyph_y + (GRID_HEIGHT - GLYPH_HEIGHT));
+        if (idx < 0) continue;
+
+        leds[idx] = CRGB(5, 5, 0);
       }
     }
 
