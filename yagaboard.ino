@@ -3,8 +3,8 @@
 
 #define LED_PIN 7
 #define GRID_HEIGHT 8
-#define GRID_WIDTH 32
-#define NUM_LEDS GRID_HEIGHT* GRID_WIDTH
+#define GRID_WIDTH 32 * 2
+#define NUM_LEDS GRID_HEIGHT * GRID_WIDTH
 
 CRGB leds[NUM_LEDS];
 
