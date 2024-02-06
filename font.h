@@ -4,7 +4,10 @@
 
 // Keep the mem low!
 
-const char GLYPH_DATA[SUPPORTED_CHARACTERS][GLYPH_HEIGHT] = {
+// The PROGMEM keyword will keep data in flashmem instead
+// of copying it to SRAM at startup. You must use pgm_read_byte
+// with a pointer to access this array.
+const char GLYPH_DATA[SUPPORTED_CHARACTERS][GLYPH_HEIGHT] PROGMEM = {
   // A
   {
     0b01100000,
@@ -284,5 +287,15 @@ const char GLYPH_DATA[SUPPORTED_CHARACTERS][GLYPH_HEIGHT] = {
     0b00000000,
     0b10001000,
     0b01110000,
+  },
+  // ?
+  {
+    0b00110000,
+    0b01001000,
+    0b01001000,
+    0b00010000,
+    0b00100000,
+    0b00000000,
+    0b00100000,
   },
 };
