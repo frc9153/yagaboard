@@ -6,6 +6,8 @@
 #define GRID_WIDTH 32 * 2
 #define NUM_LEDS GRID_HEIGHT * GRID_WIDTH
 
+int strober = 0;
+
 CRGB leds[NUM_LEDS];
 
 void setup() {
@@ -51,7 +53,7 @@ void wrap_right() {
   }
 }
 
-int draw_string(char* text, int x, bool dry = false) {
+int draw_string(char* text, int x, bool dry, CRGB color) {
   // Takes in text you want to draw and where you want to draw it, and
   // returns the last X coordinate drawn upon. Will not draw if `dry` is passed
 
@@ -73,11 +75,23 @@ int draw_string(char* text, int x, bool dry = false) {
       case '?':
         char_index = 28;  // ?
         break;
+      case '.':
+        char_index = 29; // .
+        break;
+      case '\'':
+        char_index = 30; // '
+        break;
+      case '>':
+        char_index = 31; // >
+        break;
+      case '<':
+        char_index = 32; // <
+        break;
       default:
         if (char_index >= FONT_BASE && char_index <= FONT_BASE + SUPPORTED_CHARACTERS - 1) {
           char_index -= FONT_BASE;
         } else {
-          char_index = 28;  // ?
+          char_index = 32;  // <
         }
     }
 
@@ -96,7 +110,7 @@ int draw_string(char* text, int x, bool dry = false) {
         int idx = pos_to_idx(x + glyph_x, glyph_y + (GRID_HEIGHT - GLYPH_HEIGHT));
         if (idx < 0) continue;
 
-        leds[idx] = CRGB(10, 5, 0);
+        leds[idx] = color;
       }
     }
 
@@ -112,14 +126,23 @@ int draw_string(char* text, int x, bool dry = false) {
   return x;
 }
 
-void loop() {
-  const char* text = "BABA YAGA ` \nROBOTS R EVIL LOLOLOLOL!!! ";
-  const int width = draw_string(text, 0, true);
+const char* text = ">.< OWWW THAT HURTS!!!!!";
+const int width = draw_string(text, 0, true, CRGB(0, 0, 0));
+int hue = 0;
+int saturation = 0;
+int value = 0;
+int update = 1;
 
+void loop() {
   for (int i = 0; i < width + GRID_WIDTH; i++) {
+    CHSV color = CHSV(hue, 255, 127);
     FastLED.clear();
-    draw_string(text, GRID_WIDTH - i);
+    draw_string(text, GRID_WIDTH - i, false, color);
     FastLED.show();
     delay(20);
+    if(hue == 255){
+      hue = 0;
+    }
+    hue++;
   }
 }
