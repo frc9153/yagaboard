@@ -29,3 +29,12 @@ button {
     font-weight: bold;
     background-color: red;
 }
+
+c-zone {
+    display: flex;
+    gap: 8px;
+}
+
+carousel {
+    width: 8vw;
+}
