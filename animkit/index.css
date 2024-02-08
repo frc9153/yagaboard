@@ -1,0 +1,31 @@
+#canvas {
+    width: 100%;
+    /* https://stackoverflow.com/a/65129916 */
+    /* background: repeating-conic-gradient(#80808066 0% 25%, transparent 0% 50%) 50% / 20px 20px; */
+    image-rendering: pixelated;
+}
+
+.color-button {
+    width: 64px;
+    height: 64px;
+}
+
+easel {
+    display: flex;
+    flex-direction: column;
+    width: 75vw;
+}
+
+easel bottom {
+    display: flex;
+    justify-content: space-between;
+}
+
+button {
+    padding: 4px;
+}
+
+.danger-zone {
+    font-weight: bold;
+    background-color: red;
+}
