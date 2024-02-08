@@ -1,15 +1,18 @@
 const Colors = [
     [0, 0, 0], // Black
+    [50, 50, 50], // Dark Grey
     [127, 127, 127], // Gr(a|e)y
     [255, 255, 255], // White
     [255, 0, 0], // Red
     [0, 255, 0], // Green
+    [0, 125, 0], // Dark Green
     [0, 0, 255], // Blue
     [255, 0, 255], // Magenta
     [127, 0, 255], // Purple
     [0, 255, 255], // Cyan
     [255, 255, 0], // Yellow
     [255, 127, 0], // Orange
+    [150, 100, 0], // Brown
 ];
 if (Colors.length > 16) throw "Color amount exceeds 4 bits";
 
@@ -47,9 +50,31 @@ let pixels = new Array(GRID_WIDTH * GRID_HEIGHT).fill(0);
 let mousePosPx = [0, 0];
 let gridPos = [0, 0];
 let mouseDown = false;
+let brushSize = 1;
 
 function getIndex(x, y) {
     return (y * GRID_WIDTH) + x;
+}
+
+function drawRect() {
+    let b = [
+        gridPos[0] - Math.floor(brushSize / 2),
+        gridPos[1] - Math.floor(brushSize / 2),
+    ];
+
+    return {
+        base: [Math.max(0, b[0]), Math.max(0, b[1])],
+        outer: [Math.min(GRID_WIDTH, b[0] + brushSize), Math.min(GRID_HEIGHT, b[1] + brushSize)]
+    };
+}
+
+function drawSelected() {
+    const rect = drawRect();
+    for (let y = rect.base[1]; y < rect.outer[1]; y++) {
+        for (let x = rect.base[0]; x < rect.outer[0]; x++) {
+            pixels[getIndex(x, y)] = currentColorIndex;
+        }
+    }
 }
 
 function render() {
@@ -61,7 +86,7 @@ function render() {
         !(mousePosPx[0] < 0 || mousePosPx[0] > canvas.width)
         && !(mousePosPx[1] < 0 || mousePosPx[1] > canvas.height)
     ) {
-        if (mouseDown) pixels[getIndex(...gridPos)] = currentColorIndex;
+        if (mouseDown) drawSelected();
     }
 
     // Very ineffecient but its like 512 pixels so who really cares (time
@@ -73,8 +98,15 @@ function render() {
             ctx.fillRect(x * scalar, y * scalar, scalar, scalar);
         }
     }
+
     ctx.fillStyle = `rgba(${Colors[currentColorIndex].join(",")}, 0.5)`
-    ctx.fillRect(gridPos[0] * scalar, gridPos[1] * scalar, scalar, scalar);
+    const rect = drawRect();
+    ctx.fillRect(
+        rect.base[0] * scalar,
+        rect.base[1] * scalar,
+        (rect.outer[0] * scalar) - (rect.base[0] * scalar),
+        (rect.outer[1] * scalar) - (rect.base[1] * scalar),
+    );
 }
 
 window.addEventListener("mousemove", function(event) {
@@ -98,7 +130,7 @@ canvas.addEventListener("mousedown", function() { mouseDown = true; });
 window.addEventListener("mouseup", function() { mouseDown = false; });
 
 canvas.addEventListener("click", function() {
-    pixels[getIndex(...gridPos)] = currentColorIndex;
+    drawSelected();
     render();
 });
 
@@ -196,4 +228,9 @@ $el("#export").addEventListener("click", function() {
 $el("#wipe").addEventListener("click", function() {
     pixels.fill(0);
     render();
+});
+
+$el("#brush-size").addEventListener("input", function() {
+    $el(`label[for="brush-size"]`).innerText = `Brush Size: ${this.value}px`;
+    brushSize = parseInt(this.value);
 });
