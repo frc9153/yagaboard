@@ -133,7 +133,7 @@ function optimize(pixels) {
     let bits = "";
 
     // "Header"
-    bits += (repeatSize >>> 0).toString(2).padStart(repeatSize, "0");
+    bits += (repeatSize >>> 0).toString(2).padStart(8, "0");
 
     function commit() {
         if (repeatCount >= Math.pow(2, repeatSize)) throw ":(";

@@ -1,18 +1,33 @@
 #include <FastLED.h>
 #include "font.h"
+#include "image.h"
 
 #define LED_PIN 7
 #define GRID_HEIGHT 8
 #define GRID_WIDTH 32 * 2
 #define NUM_LEDS GRID_HEIGHT * GRID_WIDTH
 
-int strober = 0;
+const CRGB COLORS[] = {
+    CRGB(0, 0, 0), // Black
+    CRGB(127, 127, 127), // Gr(a|e)y
+    CRGB(255, 255, 255), // White
+    CRGB(255, 0, 0), // Red
+    CRGB(0, 255, 0), // Green
+    CRGB(0, 0, 255), // Blue
+    CRGB(255, 0, 255), // Magenta
+    CRGB(127, 0, 255), // Purple
+    CRGB(0, 255, 255), // Cyan
+    CRGB(255, 255, 0), // Yellow
+    CRGB(255, 127, 0), // Orange
+};
 
 CRGB leds[NUM_LEDS];
 
 void setup() {
   Serial.begin(9600);
   FastLED.addLeds<WS2812, LED_PIN, GRB>(leds, NUM_LEDS);
+  draw_image();
+  FastLED.show();
 }
 
 int pos_to_idx(int x, int y) {
@@ -126,6 +141,51 @@ int draw_string(char* text, int x, bool dry, CRGB color) {
   return x;
 }
 
+void draw_image() {
+  int x = 0;
+  int y = 0;
+
+  // TODO: First two bytes will be 12 bits for size and 4 bits for repeat size
+  // (or so) for animations. OR MAYBE IT WILL FIX THAT STUPID LAST PACKET BUG
+  int repeat_size_bits = pgm_read_byte(&(IMAGE_DATA[i]));
+
+  int bit_index = 0;
+  char byte_content = 0x00;
+
+  auto eat_bits = [](int bit_count) {
+    // We will output an n bit long variable read from the byte stream
+    int out = 0b0;
+
+    while (bit_count--) {
+      // If we're about to read the 8th bit from the byte, we need to get the
+      // next byte into place. It's okay that this condition clears initally,
+      // as the first byte is the header and we want to skip that anyway.
+      if (bit_index % 8 == 0) {
+        byte_index++
+        byte_content = pgm_read_byte(&(IMAGE_DATA[byte_index]));
+      }
+      // Shift out left by one bit, and fill in the gap with the right bit from
+      // the byte we last read.
+      out = (out << 1) | ((byte_content >> (bit_index % 8)) & 0b1);
+    }
+
+    return out;
+  };
+
+  while (bit_index <= sizeof(IMAGE_DATA)) {
+    int repeat_count = eat_bits(repeat_size_bits) + 1;
+    int color_index = eat_bits(4);
+    for (int i = 0; i < repeat_count; i++) {
+      leds[pos_to_idx(x, y)] = COLORS[color_index];
+
+      if (++x > GRID_WIDTH) {
+        x = 0;
+        y++;
+      }
+    }
+  }
+}
+
 const char* text = ">.< OWWW THAT HURTS!!!!!";
 const int width = draw_string(text, 0, true, CRGB(0, 0, 0));
 int hue = 0;
@@ -134,6 +194,8 @@ int value = 0;
 int update = 1;
 
 void loop() {
+  return;
+
   for (int i = 0; i < width + GRID_WIDTH; i++) {
     CHSV color = CHSV(hue, 255, 127);
     FastLED.clear();
