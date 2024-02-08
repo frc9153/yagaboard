@@ -181,7 +181,7 @@ void draw_image() {
 
       if (++x > GRID_WIDTH) {
         x = 0;
-        y++;
+        if (++y > GRID_HEIGHT) break;
       }
     }
   }
