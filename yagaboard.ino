@@ -147,7 +147,7 @@ void draw_image() {
 
   // TODO: First two bytes will be 12 bits for size and 4 bits for repeat size
   // (or so) for animations. OR MAYBE IT WILL FIX THAT STUPID LAST PACKET BUG
-  int repeat_size_bits = pgm_read_byte(&(IMAGE_DATA[i]));
+  int repeat_size_bits = pgm_read_byte(&(IMAGE_DATA[0]));
 
   int bit_index = 0;
   char byte_content = 0x00;
@@ -161,7 +161,7 @@ void draw_image() {
       // next byte into place. It's okay that this condition clears initally,
       // as the first byte is the header and we want to skip that anyway.
       if (bit_index % 8 == 0) {
-        byte_index++
+        byte_index++;
         byte_content = pgm_read_byte(&(IMAGE_DATA[byte_index]));
       }
       // Shift out left by one bit, and fill in the gap with the right bit from
@@ -179,9 +179,9 @@ void draw_image() {
     for (int i = 0; i < repeat_count; i++) {
       leds[pos_to_idx(x, y)] = COLORS[color_index];
 
-      if (++x > GRID_WIDTH) {
+      if (++x >= GRID_WIDTH) {
         x = 0;
-        if (++y > GRID_HEIGHT) break;
+        if (++y >= GRID_HEIGHT) break;
       }
     }
   }
