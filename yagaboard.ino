@@ -9,6 +9,7 @@
 
 const CRGB COLORS[] = {
     CRGB(0, 0, 0), // Black
+    CRGB(50, 50, 50), // Dark Grey
     CRGB(127, 127, 127), // Gr(a|e)y
     CRGB(255, 255, 255), // White
     CRGB(255, 0, 0), // Red
@@ -19,12 +20,14 @@ const CRGB COLORS[] = {
     CRGB(0, 255, 255), // Cyan
     CRGB(255, 255, 0), // Yellow
     CRGB(255, 127, 0), // Orange
+    CRGB(150, 100, 0), // Brown
 };
 
 CRGB leds[NUM_LEDS];
 
 void setup() {
   Serial.begin(9600);
+  FastLED.setBrightness(5);
   FastLED.addLeds<WS2812, LED_PIN, GRB>(leds, NUM_LEDS);
   draw_image();
   FastLED.show();
@@ -141,28 +144,51 @@ int draw_string(char* text, int x, bool dry, CRGB color) {
   return x;
 }
 
+void print_binary(byte inByte, int go)
+{
+  for (int b = go-1; b >= 0; b--)
+  {
+    Serial.print(bitRead(inByte, b));
+  }
+  Serial.print("\n");
+}
+
 void draw_image() {
   int x = 0;
   int y = 0;
 
+  FastLED.clear();
+
   // TODO: First two bytes will be 12 bits for size and 4 bits for repeat size
   // (or so) for animations. OR MAYBE IT WILL FIX THAT STUPID LAST PACKET BUG
-  int repeat_size_bits = pgm_read_byte(&(IMAGE_DATA[0]));
+  uint8_t bit_bite_this_part_away = pgm_read_byte(&(IMAGE_DATA[0]));
+  uint8_t repeat_size_bits = pgm_read_byte(&(IMAGE_DATA[1]));
 
-  int bit_index = 0;
+  Serial.print("\ndraw_image: repeat_size_bit ");
+  Serial.println(repeat_size_bits);
+  Serial.print("suze");
+  Serial.println(sizeof(IMAGE_DATA));
+
+  int bit_index = 8 * 2;
+  uint32_t bit_length = (sizeof(IMAGE_DATA) * 8) - 8 + bit_bite_this_part_away;
+  Serial.print("BITLEN: ");
+  Serial.println(bit_length);
   char byte_content = 0x00;
+  // length 00001001
+  // 111111111
+  // 1011
 
-  auto eat_bits = [](int bit_count) {
+  auto eat_bits = [&](int bit_count) mutable {
     // We will output an n bit long variable read from the byte stream
-    int out = 0b0;
+    uint16_t out = 0;
 
     while (bit_count--) {
+      if (bit_index > bit_length) break;
       // If we're about to read the 8th bit from the byte, we need to get the
       // next byte into place. It's okay that this condition clears initally,
       // as the first byte is the header and we want to skip that anyway.
       if (bit_index % 8 == 0) {
-        byte_index++;
-        byte_content = pgm_read_byte(&(IMAGE_DATA[byte_index]));
+        byte_content = pgm_read_byte(&(IMAGE_DATA[bit_index / 8]));
       }
       // Shift out left by one bit, and fill in the gap with the right bit from
       // the byte we last read.
@@ -173,9 +199,19 @@ void draw_image() {
     return out;
   };
 
-  while (bit_index <= sizeof(IMAGE_DATA)) {
-    int repeat_count = eat_bits(repeat_size_bits) + 1;
-    int color_index = eat_bits(4);
+  while (bit_index <= bit_length) {
+    uint16_t repeat_count = eat_bits(repeat_size_bits);
+    uint16_t color_index = eat_bits(4);
+
+    Serial.print("\nColor:");
+    Serial.println(color_index);
+    Serial.print(" Repeat: ");
+    Serial.println(repeat_count);
+    Serial.print("\nColorBIN: ");
+    print_binary(color_index, 16);
+    Serial.print("RepeatBIN: ");
+    print_binary(repeat_count, 16);
+
     for (int i = 0; i < repeat_count; i++) {
       leds[pos_to_idx(x, y)] = COLORS[color_index];
 
