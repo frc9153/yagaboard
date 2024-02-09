@@ -192,7 +192,8 @@ void draw_image() {
       }
       // Shift out left by one bit, and fill in the gap with the right bit from
       // the byte we last read.
-      out = (out << 1) | ((byte_content >> (bit_index % 8)) & 0b1);
+      out = (out << 1) | ((byte_content >> (8 - (bit_index % 8))) & 0b1);
+      // !! Read byte_content right to left and writes out left to right (fixed)
       bit_index++;
     }
 
