@@ -31,7 +31,7 @@ for (const [i, c] of Object.entries(Colors)) {
     );
 
     button.addEventListener("click", function() {
-        currentColorIndex = i;
+        currentColorIndex = parseInt(i);
     });
 }
 
@@ -161,7 +161,7 @@ function optimize(pixels) {
     console.info(`We think the best repeat size is ${repeatSize}`);
 
     let repeatCount = 0;
-    let lastColor = -1;
+    let lastColor = pixels[0];
     let bits = "";
 
     // "Header"
@@ -188,7 +188,12 @@ function optimize(pixels) {
 
         commit();
         lastColor = colorIndex;
+        repeatCount++;
     }
+    commit();
+
+    bits = ((bits.length % 8) >>> 0).toString(2).padStart(8, "0") + bits;
+
 
     console.log(bits);
 
