@@ -188,7 +188,9 @@ function optimize(pixels) {
 
         commit();
         lastColor = colorIndex;
+        repeatCount++;
     }
+    commit();
 
     bits = ((bits.length % 8) >>> 0).toString(2).padStart(8, "0") + bits;
 
