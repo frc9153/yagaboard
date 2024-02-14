@@ -36,18 +36,6 @@ void setup() {
 }
 
 int pos_to_idx(int x, int y) {
-  // bool second_board = (y >= 8);
-  // int out = 0;
-  // if (second_board && !FLIP_SECOND_BOARD) {
-  //   out += NUM_LEDS / 2;
-  // }
-  // if ((x % 2 != 0 && (!FLIP_SECOND_BOARD || !second_board)) || (x % 2 == 0 && second_board && FLIP_SECOND_BOARD)) {
-  //   y = INDIVIDUAL_HEIGHT - 1 - (y % 8);
-  // }
-  // out += (y % 8) + (x * INDIVIDUAL_HEIGHT);
-  // if (second_board && FLIP_SECOND_BOARD) {
-  //   out = NUM_LEDS - out;
-  // }
   int out = 0;
 
   if (y >= INDIVIDUAL_HEIGHT) {
@@ -261,6 +249,11 @@ void draw_image() {
       //Serial.print(x);
       // Serial.print(" Y: ");
       // Serial.print(y);
+<<<<<<< HEAD
+=======
+      delay(10);
+      FastLED.show();
+>>>>>>> e33a7883e307ce73f21ca289bcfcbbd2ec61b425
 
       if (++x >= GRID_WIDTH) {
         x = 0;
@@ -269,7 +262,10 @@ void draw_image() {
     }
   }
 
+<<<<<<< HEAD
   FastLED.show();
+=======
+>>>>>>> e33a7883e307ce73f21ca289bcfcbbd2ec61b425
 }
 
 const char* text = ">.< OWWW THAT HURTS!!!!!";
