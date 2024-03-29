@@ -30,13 +30,20 @@ CRGB leds[NUM_LEDS];
 
 void setup() {
   Serial.begin(9600);
-  FastLED.setBrightness(5);
+  FastLED.setBrightness(25);
   FastLED.addLeds<WS2812, LED_PIN, GRB>(leds, NUM_LEDS);
+  //draw_string("123456\n0.789", 0, false, CRGB(255, 255, 255));
+  //leds[pos_to_idx(0, 0)] = CRGB(0, 255, 0);
+  //leds[pos_to_idx(1, 1)] = CRGB(0, 0, 255);
   draw_image();
+  FastLED.show();
 }
 
 int pos_to_idx(int x, int y) {
   int out = 0;
+
+  if (x >= GRID_WIDTH) return -1;
+  if (y >= GRID_HEIGHT) return -1;
 
   if (y >= INDIVIDUAL_HEIGHT) {
     out += INDIVIDUAL_HEIGHT * GRID_WIDTH;
@@ -61,29 +68,10 @@ int pos_to_idx(int x, int y) {
   return out;
 }
 
-void wrap_right() {
-  // Wraps the current screen contents to the right. Does not buffer.
-
-  // ... except for this
-  CRGB buffer[GRID_HEIGHT];
-
-  for (int x = 0; x < GRID_WIDTH; x++) {
-    for (int y = 0; y < GRID_HEIGHT; y++) {
-      CRGB current_color = leds[pos_to_idx(x, y)];
-      if (x == GRID_WIDTH - 1) current_color = buffer[y];
-
-      if (x - 1 < 0) {
-        buffer[y] = current_color;
-      } else {
-        leds[pos_to_idx(x - 1, y)] = current_color;
-      }
-    }
-  }
-}
-
 int draw_string(char* text, int x, bool dry, CRGB color) {
   // Takes in text you want to draw and where you want to draw it, and
   // returns the last X coordinate drawn upon. Will not draw if `dry` is passed
+  int y = 0;
 
   for (int i = 0; i < strlen(text); i++) {
     char char_index = text[i];
@@ -115,17 +103,54 @@ int draw_string(char* text, int x, bool dry, CRGB color) {
       case '<':
         char_index = 32;  // <
         break;
+      case '0':
+        char_index = 33;  // 0
+        break;
+      case '1':
+        char_index = 34;  // 1
+        break;
+      case '2':
+        char_index = 35;  // 2
+        break;
+      case '3':
+        char_index = 36;  // 3
+        break;
+      case '4':
+        char_index = 37;  // 4
+        break;
+      case '5':
+        char_index = 38;  // 5
+        break;
+      case '6':
+        char_index = 39;  // 6
+        break;
+      case '7':
+        char_index = 40;  // 7
+        break;
+      case '8':
+        char_index = 41;  // 8
+        break;
+      case '9':
+        char_index = 42;  // 9
+        break;
       default:
         if (char_index >= FONT_BASE && char_index <= FONT_BASE + SUPPORTED_CHARACTERS - 1) {
           char_index -= FONT_BASE;
         } else {
-          char_index = 32;  // <
+          Serial.println(char_index);
+          char_index = 28;  // ?
         }
     }
+
 
     char x_populated_mask = 0b00000000;
     for (int glyph_y = 0; glyph_y < GLYPH_HEIGHT; glyph_y++) {
       char row = pgm_read_byte(&(GLYPH_DATA[char_index][glyph_y]));
+      
+      if (x + 7 > GRID_WIDTH) {
+        y += INDIVIDUAL_HEIGHT;
+        x = 0;
+      }
 
       for (int glyph_x = 0; glyph_x < 8; glyph_x++) {
         if (!bitRead(row, 7 - glyph_x)) continue;
@@ -135,7 +160,8 @@ int draw_string(char* text, int x, bool dry, CRGB color) {
 
         if (dry) continue;
 
-        int idx = pos_to_idx(x + glyph_x, glyph_y + (GRID_HEIGHT - GLYPH_HEIGHT));
+
+        int idx = pos_to_idx(x + glyph_x, y + glyph_y + (INDIVIDUAL_HEIGHT - GLYPH_HEIGHT));
         if (idx < 0) continue;
 
         leds[idx] = color;
@@ -165,24 +191,13 @@ void draw_image() {
   int x = 0;
   int y = 0;
 
-
   // TODO: First two bytes will be 12 bits for size and 4 bits for repeat size
   // (or so) for animations. OR MAYBE IT WILL FIX THAT STUPID LAST PACKET BUG
   uint8_t bit_bite_this_part_away = pgm_read_byte(&(IMAGE_DATA[0]));
   uint8_t repeat_size_bits = pgm_read_byte(&(IMAGE_DATA[1]));
 
-  // print_binary(pgm_read_byte(&(IMAGE_DATA[2])), 8);
-  // print_binary(pgm_read_byte(&(IMAGE_DATA[3])), 8);
-
-  // Serial.print("\ndraw_image: repeat_size_bit ");
-  // Serial.println(repeat_size_bits);
-  // Serial.print("suze");
-  // Serial.println(sizeof(IMAGE_DATA));
-
   uint32_t bit_index = (8 * 2);
   uint32_t bit_length = (sizeof(IMAGE_DATA) * 8) - (8 - bit_bite_this_part_away);
-  // Serial.print("BITLEN: ");
-  // Serial.println(bit_length);
   char byte_content = 0x00;
   // length 00001001
   // 111111111
@@ -191,10 +206,6 @@ void draw_image() {
   auto eat_bits = [&](int bit_count) mutable {
     // We will output an n bit long variable read from the byte stream
     uint16_t out = 0;
-    // Serial.print("BITINDEX:");
-    // Serial.print(bit_index);
-    // Serial.print(" eating: ");
-    // Serial.print(bit_count);
 
     while (bit_count--) {
       if (bit_index >= bit_length) break;
@@ -203,25 +214,15 @@ void draw_image() {
       // as the first byte is the header and we want to skip that anyway.
       if (bit_index % 8 == 0) {
         byte_content = pgm_read_byte(&(IMAGE_DATA[bit_index / 8]));
-        // Serial.print("NEW BITS: ");
-        // print_binary(byte_content, 8);
         if (bit_index / 8 == sizeof(IMAGE_DATA) - 1) {
-          //bit_index += 8-bit_bite_this_part_away;
           byte_content = byte_content << (8 - bit_bite_this_part_away);
         }
       }
       // Shift out left by one bit, and fill in the gap with the right bit from
-      // Serial.print("eating... ");
-      // Serial.print(((byte_content >> (bit_index % 8)) & 0b1));
-      // Serial.print(" @");
-      // Serial.print(7-(bit_index % 8));
       // the byte we last read.
       out = (out << 1) | ((byte_content >> (7 - (bit_index % 8))) & 0b1);
       bit_index++;
     }
-
-    // Serial.print(" ending: ");
-    // Serial.println(bit_index);
 
     return out;
   };
@@ -232,29 +233,8 @@ void draw_image() {
     uint16_t repeat_count = eat_bits(repeat_size_bits);
     uint16_t color_index = eat_bits(4);
 
-    // Serial.print("\nColor:");
-    // Serial.println(color_index);
-    // Serial.print(" Repeat: ");
-    // Serial.println(repeat_count);
-    // Serial.print("\nColorBIN: ");
-    // print_binary(color_index, 4);
-    // Serial.print("RepeatBIN: ");
-    // print_binary(repeat_count, repeat_size_bits);
-
     for (int i = 0; i < repeat_count; i++) {
       leds[pos_to_idx(x, y)] = COLORS[color_index];
-      //Serial.print("\nColor:");
-      //Serial.print(color_index);
-      //Serial.print(" X: ");
-      //Serial.print(x);
-      // Serial.print(" Y: ");
-      // Serial.print(y);
-<<<<<<< HEAD
-=======
-      delay(10);
-      FastLED.show();
->>>>>>> e33a7883e307ce73f21ca289bcfcbbd2ec61b425
-
       if (++x >= GRID_WIDTH) {
         x = 0;
         if (++y >= GRID_HEIGHT) break;
@@ -262,30 +242,9 @@ void draw_image() {
     }
   }
 
-<<<<<<< HEAD
   FastLED.show();
-=======
->>>>>>> e33a7883e307ce73f21ca289bcfcbbd2ec61b425
 }
-
-const char* text = ">.< OWWW THAT HURTS!!!!!";
-const int width = draw_string(text, 0, true, CRGB(0, 0, 0));
-int hue = 0;
-int saturation = 0;
-int value = 0;
-int update = 1;
 
 void loop() {
   return;
-
-  FastLED.clear();
-  for (int i = 0; i < width + GRID_WIDTH; i++) {
-    CHSV color = CHSV(hue, 255, 127);
-    draw_string(text, GRID_WIDTH - i, false, color);
-    if (hue == 255) {
-      hue = 0;
-    }
-    hue++;
-  }
-  FastLED.show();
 }
