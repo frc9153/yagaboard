@@ -12,11 +12,11 @@
 const CRGB COLORS[] = {
   CRGB(0, 0, 0),        // Black
   CRGB(25, 25, 25),     // Dark Grey
-  CRGB(75, 75, 75),  // Gr(a|e)y
+  CRGB(75, 75, 75),     // Gr(a|e)y
   CRGB(255, 255, 255),  // White
   CRGB(255, 0, 0),      // Red
   CRGB(0, 255, 0),      // Green
-  CRGB(0, 45, 0),      // Dark Green
+  CRGB(0, 45, 0),       // Dark Green
   CRGB(0, 0, 255),      // Blue
   CRGB(255, 0, 255),    // Magenta
   CRGB(127, 0, 255),    // Purple
@@ -29,13 +29,13 @@ const CRGB COLORS[] = {
 CRGB leds[NUM_LEDS];
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(57600);
   FastLED.setBrightness(25);
   FastLED.addLeds<WS2812, LED_PIN, GRB>(leds, NUM_LEDS);
   //draw_string("123456\n0.789", 0, false, CRGB(255, 255, 255));
   //leds[pos_to_idx(0, 0)] = CRGB(0, 255, 0);
   //leds[pos_to_idx(1, 1)] = CRGB(0, 0, 255);
-  draw_image();
+  // draw_image();
   FastLED.show();
 }
 
@@ -146,7 +146,7 @@ int draw_string(char* text, int x, bool dry, CRGB color) {
     char x_populated_mask = 0b00000000;
     for (int glyph_y = 0; glyph_y < GLYPH_HEIGHT; glyph_y++) {
       char row = pgm_read_byte(&(GLYPH_DATA[char_index][glyph_y]));
-      
+
       if (x + 7 > GRID_WIDTH) {
         y += INDIVIDUAL_HEIGHT;
         x = 0;
@@ -187,14 +187,14 @@ void print_binary(byte inByte, int go) {
   Serial.print("\n");
 }
 
-void draw_image() {
+void draw_image(char image_data[]) {
   int x = 0;
   int y = 0;
 
   // TODO: First two bytes will be 12 bits for size and 4 bits for repeat size
   // (or so) for animations. OR MAYBE IT WILL FIX THAT STUPID LAST PACKET BUG
-  uint8_t bit_bite_this_part_away = pgm_read_byte(&(IMAGE_DATA[0]));
-  uint8_t repeat_size_bits = pgm_read_byte(&(IMAGE_DATA[1]));
+  uint8_t bit_bite_this_part_away = image_data[0];  //pgm_read_byte(&(IMAGE_DATA[0]));
+  uint8_t repeat_size_bits = image_data[1];         //pgm_read_byte(&(IMAGE_DATA[1]));
 
   uint32_t bit_index = (8 * 2);
   uint32_t bit_length = (sizeof(IMAGE_DATA) * 8) - (8 - bit_bite_this_part_away);
@@ -213,7 +213,7 @@ void draw_image() {
       // next byte into place. It's okay that this condition clears initally,
       // as the first byte is the header and we want to skip that anyway.
       if (bit_index % 8 == 0) {
-        byte_content = pgm_read_byte(&(IMAGE_DATA[bit_index / 8]));
+        byte_content = image_data[bit_index / 8];  //pgm_read_byte(&(IMAGE_DATA[bit_index / 8]));
         if (bit_index / 8 == sizeof(IMAGE_DATA) - 1) {
           byte_content = byte_content << (8 - bit_bite_this_part_away);
         }
@@ -245,6 +245,29 @@ void draw_image() {
   FastLED.show();
 }
 
+char get_serial_byte() {
+  while (!Serial.available()) {
+    delay(0);
+  }
+  return Serial.read();
+}
+
 void loop() {
-  return;
+  short length = (get_serial_byte() << 8) | get_serial_byte();
+  Serial.println("len1");
+
+  byte image[length];
+  Serial.println("post");
+
+  for (int i = 0; i < length; i++) {
+    Serial.print(i);
+    image[i] = get_serial_byte();
+    leds[i] = COLORS[4];
+    FastLED.show();
+  }
+
+  draw_image(image);
+  FastLED.show();
+
+  Serial.println("okayyy!");
 }
